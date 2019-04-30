@@ -50,7 +50,7 @@ object RPCDemo extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] =
-    Fs2Rabbit[IO](config).flatMap { implicit fs2Rabbit =>
+    Fs2Rabbit[IO, Stream](config).flatMap { implicit fs2Rabbit =>
       val queue = QueueName("rpc_queue")
       runServer[IO](queue).concurrently(runClient[IO](queue)).compile.drain.as(ExitCode.Success)
     }

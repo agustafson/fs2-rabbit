@@ -18,7 +18,7 @@ val queueName = QueueName("daQ")
 
 def doSomething(consumer: Stream[IO, AmqpEnvelope[String]]): Stream[IO, Unit] = Stream.eval(IO.unit)
 
-def program(implicit R: Fs2Rabbit[IO]) =
+def program(implicit R: Fs2Rabbit[IO, Stream]) =
   R.createConnectionChannel.flatMap { implicit channel => // Stream[IO, AMQPChannel]
     for {
       c <- R.createAutoAckConsumer[String](queueName)	    // Stream[IO, AmqpEnvelope[String]]

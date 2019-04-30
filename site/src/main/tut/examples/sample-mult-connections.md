@@ -35,7 +35,7 @@ val rk = RoutingKey("RKA")
 Here's our program `p1` creating a `Consumer` representing the first `Connection`:
 
 ```tut:book:silent
-def p1(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { implicit channel =>
+def p1(implicit F: Fs2Rabbit[IO, Stream]) = F.createConnectionChannel.flatMap { implicit channel =>
   for {
     _  <- F.declareExchange(ex, ExchangeType.Topic)
     _  <- F.declareQueue(DeclarationQueueConfig.default(q1))
@@ -48,7 +48,7 @@ def p1(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { implicit
 Here's our program `p2` creating a `Consumer` representing the second `Connection`:
 
 ```tut:book:silent
-def p2(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { implicit channel =>
+def p2(implicit F: Fs2Rabbit[IO, Stream]) = F.createConnectionChannel.flatMap { implicit channel =>
   for {
     _  <- F.declareExchange(ex, ExchangeType.Topic)
     _  <- F.declareQueue(DeclarationQueueConfig.default(q1))
@@ -61,7 +61,7 @@ def p2(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { implicit
 Here's our program `p3` creating a `Publisher` representing the third `Connection`:
 
 ```tut:book:silent
-def p3(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { implicit channel =>
+def p3(implicit F: Fs2Rabbit[IO, Stream]) = F.createConnectionChannel.flatMap { implicit channel =>
   for {
     _  <- F.declareExchange(ex, ExchangeType.Topic)
     pb <- F.createPublisher(ex, rk)
@@ -74,7 +74,7 @@ And finally we compose all the three programs together:
 ```tut:book:silent
 val pipe: Pipe[IO, AmqpEnvelope[String], String] = _.map(_.payload)
 
-def program(implicit F: Fs2Rabbit[IO]) =
+def program(implicit F: Fs2Rabbit[IO, Stream]) =
   for {
     c1 <- p1
     c2 <- p2

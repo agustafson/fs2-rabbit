@@ -16,6 +16,7 @@
 
 package com.github.gvolpe.fs2rabbit.interpreter
 
+import cats.Functor
 import cats.effect.{Concurrent, ConcurrentEffect}
 import cats.syntax.functor._
 import com.github.gvolpe.fs2rabbit.algebra._
@@ -30,25 +31,45 @@ import javax.net.ssl.SSLContext
 
 // $COVERAGE-OFF$
 object Fs2Rabbit {
+  @deprecated(message = "User `stream` instead", since = "1.3.0")
   def apply[F[_]: ConcurrentEffect](
       config: Fs2RabbitConfig,
       sslContext: Option[SSLContext] = None
-  ): F[Fs2Rabbit[F]] =
-    ConnectionStream.mkConnectionFactory[F](config, sslContext).map {
+  ): F[Fs2Rabbit[F, Stream]] = stream(config, sslContext)
+
+  def stream[F[_]: ConcurrentEffect](
+      config: Fs2RabbitConfig,
+      sslContext: Option[SSLContext] = None
+  ): F[Fs2Rabbit[F, Stream]] = bracketed[F, Stream](config, sslContext)
+//    ConnectionBracketedResource.mkConnectionFactory[F](config, sslContext).map {
+//      case (factory, addresses) =>
+//        val amqpClient = new AMQPClientStream[F]
+//        val connStream = new ConnectionBracketedResource[F, Stream[F, ?]](factory, addresses)
+//        val internalQ  = new LiveInternalQueue[F](config.internalQueueSize.getOrElse(500))
+//        val acker      = new AckingProgram[F](config, amqpClient)
+//        val consumer   = new ConsumingProgram[F](amqpClient, internalQ)
+//        new Fs2Rabbit[F, Stream](config, connStream, amqpClient, acker, consumer)
+//    }
+
+  def bracketed[F[_]: ConcurrentEffect, R[_[_], _]](
+      config: Fs2RabbitConfig,
+      sslContext: Option[SSLContext] = None
+  )(implicit B: BracketedResource[F, R], FR: Functor[Lambda[A => R[F, A]]]): F[Fs2Rabbit[F, R]] =
+    ConnectionBracketedResource.mkConnectionFactory[F](config, sslContext).map {
       case (factory, addresses) =>
         val amqpClient = new AMQPClientStream[F]
-        val connStream = new ConnectionStream[F](factory, addresses)
+        val connStream = new ConnectionBracketedResource[F, R](factory, addresses)
         val internalQ  = new LiveInternalQueue[F](config.internalQueueSize.getOrElse(500))
         val acker      = new AckingProgram[F](config, amqpClient)
         val consumer   = new ConsumingProgram[F](amqpClient, internalQ)
-        new Fs2Rabbit[F](config, connStream, amqpClient, acker, consumer)
+        new Fs2Rabbit[F, R](config, connStream, amqpClient, acker, consumer)
     }
 }
 // $COVERAGE-ON$
 
-class Fs2Rabbit[F[_]: Concurrent] private[fs2rabbit] (
+class Fs2Rabbit[F[_]: Concurrent, R[_[_], _]] private[fs2rabbit] (
     config: Fs2RabbitConfig,
-    connectionStream: Connection[Stream[F, ?]],
+    connectionResource: Connection[R[F, ?]],
     amqpClient: AMQPClient[Stream[F, ?], F],
     acker: Acking[F],
     consumer: Consuming[Stream[F, ?], F]
@@ -60,9 +81,9 @@ class Fs2Rabbit[F[_]: Concurrent] private[fs2rabbit] (
   private[fs2rabbit] val publishingProgram: Publishing[Stream[F, ?], F] =
     new PublishingProgram[F](amqpClient)
 
-  def createConnection: Stream[F, AMQPConnection] = connectionStream.createConnection
+  def createConnection: R[F, AMQPConnection] = connectionResource.createConnection
 
-  def createConnectionChannel: Stream[F, AMQPChannel] = connectionStream.createConnectionChannel
+  def createConnectionChannel: R[F, AMQPChannel] = connectionResource.createConnectionChannel
 
   def createAckerConsumer[A](
       queueName: QueueName,

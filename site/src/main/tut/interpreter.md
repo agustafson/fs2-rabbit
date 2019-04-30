@@ -50,7 +50,7 @@ class Demo extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] =
-    Fs2Rabbit[IO](config).flatMap { implicit fs2Rabbit =>
+    Fs2Rabbit.stream[IO](config).flatMap { implicit fs2Rabbit =>
       Program.foo[IO].compile.drain.as(ExitCode.Success)
     }
 

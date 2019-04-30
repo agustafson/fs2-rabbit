@@ -35,7 +35,7 @@ def multipleConsumers(c1: Stream[IO, AmqpEnvelope[String]], c2: Stream[IO, AmqpE
   ).parJoin(3)
 }
 
-def program(F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { implicit channel =>
+def program(F: Fs2Rabbit[IO, Stream]) = F.createConnectionChannel.flatMap { implicit channel =>
     for {
       _  <- F.declareExchange(ex, ExchangeType.Topic)
       _  <- F.declareQueue(DeclarationQueueConfig.default(q1))

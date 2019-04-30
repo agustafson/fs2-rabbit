@@ -22,7 +22,7 @@ import fs2._
 val x1 = ExchangeName("x1")
 val x2 = ExchangeName("x2")
 
-def exchanges(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { implicit channel =>
+def exchanges(implicit F: Fs2Rabbit[IO, Stream]) = F.createConnectionChannel.flatMap { implicit channel =>
   for {
     _ <- F.declareExchange(x1, ExchangeType.Topic)
     _ <- F.declareExchange(x2, ExchangeType.FanOut)
@@ -40,7 +40,7 @@ import fs2._
 
 val x = ExchangeName("x")
 
-def exchanges(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { implicit channel =>
+def exchanges(implicit F: Fs2Rabbit[IO, Stream]) = F.createConnectionChannel.flatMap { implicit channel =>
   for {
     _ <- F.declareExchangePassive(x)
   } yield ()
@@ -52,7 +52,7 @@ def exchanges(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel.flatMap { i
 Two exchanges can be bound together by providing a `RoutingKey` and some extra arguments with `ExchangeBindingArgs`.
 
 ```tut:book:silent
-def binding(F: Fs2Rabbit[IO])(implicit channel: AMQPChannel) =
+def binding(F: Fs2Rabbit[IO, Stream])(implicit channel: AMQPChannel) =
   F.bindExchange(x1, x2, RoutingKey("rk"), ExchangeBindingArgs(Map.empty))
 ```
 

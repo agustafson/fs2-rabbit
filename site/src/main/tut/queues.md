@@ -22,7 +22,7 @@ import fs2._
 val q1 = QueueName("q1")
 val q2 = QueueName("q2")
 
-def exchanges(implicit F: Fs2Rabbit[IO]) = F.createConnectionChannel flatMap { implicit channel =>
+def exchanges(implicit F: Fs2Rabbit[IO, Stream]) = F.createConnectionChannel flatMap { implicit channel =>
   for {
     _ <- F.declareQueue(DeclarationQueueConfig.default(q1))
     _ <- F.declareQueue(DeclarationQueueConfig.default(q2))
@@ -37,7 +37,7 @@ val x1  = ExchangeName("x1")
 val rk1 = RoutingKey("rk1")
 val rk2 = RoutingKey("rk2")
 
-def binding(F: Fs2Rabbit[IO])(implicit channel: AMQPChannel) =
+def binding(F: Fs2Rabbit[IO, Stream])(implicit channel: AMQPChannel) =
   for {
     _ <- F.bindQueue(q1, x1, rk1)
     _ <- F.bindQueue(q2, x1, rk2)

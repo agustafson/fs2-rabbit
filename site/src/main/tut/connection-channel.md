@@ -13,7 +13,7 @@ import cats.effect.IO
 import com.github.gvolpe.fs2rabbit.interpreter.Fs2Rabbit
 import fs2._
 
-def program(implicit R: Fs2Rabbit[IO]): Stream[IO, Unit] = {
+def program(implicit R: Fs2Rabbit[IO, Stream]): Stream[IO, Unit] = {
   val connChannel = R.createConnectionChannel
   connChannel.flatMap { implicit channel =>
     // Here create consumers, publishers, etc

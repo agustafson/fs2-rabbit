@@ -34,7 +34,7 @@ trait ConnectionStreamSpec { self: BaseSpec =>
       }.void
 
     for {
-      rabbit     <- Fs2Rabbit[IO](config)
+      rabbit     <- Fs2Rabbit.stream[IO](config)
       connection <- rabbit.createConnectionChannel.evalTap(openAssertion).compile.lastOrError
     } yield {
       assert(!connection.value.isOpen, "Channel should be closed")

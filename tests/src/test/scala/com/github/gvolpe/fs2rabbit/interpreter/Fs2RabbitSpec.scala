@@ -550,12 +550,12 @@ trait Fs2RabbitSpec { self: BaseSpec =>
     }
   }
 
-  private def withRabbit[A](fa: Fs2Rabbit[IO] => Stream[IO, A]): Unit = IOAssertion {
-    Fs2Rabbit[IO](config).flatMap(r => fa(r).compile.drain)
+  private def withRabbit[A](fa: Fs2Rabbit[IO, Stream] => Stream[IO, A]): Unit = IOAssertion {
+    Fs2Rabbit.stream[IO](config).flatMap(r => fa(r).compile.drain)
   }
 
-  private def withNackRabbit[A](fa: Fs2Rabbit[IO] => Stream[IO, A]): Unit = IOAssertion {
-    Fs2Rabbit[IO](config.copy(requeueOnNack = true)).flatMap(r => fa(r).compile.drain)
+  private def withNackRabbit[A](fa: Fs2Rabbit[IO, Stream] => Stream[IO, A]): Unit = IOAssertion {
+    Fs2Rabbit.stream[IO](config.copy(requeueOnNack = true)).flatMap(r => fa(r).compile.drain)
   }
 
   private def randomQueueData: IO[(QueueName, ExchangeName, RoutingKey)] =
