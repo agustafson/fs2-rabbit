@@ -16,8 +16,8 @@
 
 package dev.profunktor.fs2rabbit.interpreter
 
-import cats.effect.concurrent.Deferred
 import cats.effect._
+import cats.effect.kernel.Deferred
 import cats.implicits._
 import dev.profunktor.fs2rabbit.config.Fs2RabbitConfig
 import dev.profunktor.fs2rabbit.config.declaration._

@@ -16,7 +16,7 @@ import dev.profunktor.fs2rabbit.interpreter.RabbitClient
 import javax.net.ssl.SSLContext
 
 object RabbitClient {
-  def apply[F[_]: ConcurrentEffect: ContextShift](
+  def apply[F[_]: ConcurrentEffect](
     config: Fs2RabbitConfig,
     blocker: Blocker,
     sslContext: Option[SSLContext] = None,
