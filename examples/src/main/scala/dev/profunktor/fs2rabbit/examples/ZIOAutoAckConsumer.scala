@@ -19,12 +19,11 @@ package dev.profunktor.fs2rabbit.examples
 import dev.profunktor.fs2rabbit.config.Fs2RabbitConfig
 import dev.profunktor.fs2rabbit.interpreter.RabbitClient
 
-import cats.effect.{Blocker, Resource}
+import cats.effect.{Resource}
 import zio._
 import zio.interop.catz._
 import zio.interop.catz.implicits._
 import dev.profunktor.fs2rabbit.resiliency.ResilientStream
-import java.util.concurrent.Executors
 
 object ZIOAutoAckConsumer extends CatsApp {
 
@@ -41,18 +40,11 @@ object ZIOAutoAckConsumer extends CatsApp {
     internalQueueSize = Some(500)
   )
 
-  val blockerResource =
-    Resource
-      .make(Task(Executors.newCachedThreadPool()))(es => Task(es.shutdown()))
-      .map(Blocker.liftExecutorService)
-
   override def run(args: List[String]): URIO[ZEnv, ExitCode] =
-    blockerResource
-      .use { blocker =>
-        RabbitClient[Task](config, blocker).flatMap { client =>
-          ResilientStream
-            .runF(new AutoAckConsumerDemo[Task](client).program)
-        }
+    RabbitClient[Task](config)
+      .flatMap { client =>
+        ResilientStream
+          .runF(new AutoAckConsumerDemo[Task](client).program)
       }
       .orDie
       .as(ExitCode.success)

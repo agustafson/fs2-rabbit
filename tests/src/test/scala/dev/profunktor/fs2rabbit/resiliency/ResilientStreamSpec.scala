@@ -17,7 +17,7 @@
 package dev.profunktor.fs2rabbit.resiliency
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
+import cats.effect.kernel.Ref
 import cats.implicits._
 import dev.profunktor.fs2rabbit.BaseSpec
 import fs2._

@@ -23,7 +23,6 @@ import dev.profunktor.fs2rabbit.config.{Fs2RabbitConfig, Fs2RabbitNodeConfig}
 import dev.profunktor.fs2rabbit.interpreter.RabbitClient
 import dev.profunktor.fs2rabbit.resiliency.ResilientStream
 import monix.eval.{Task, TaskApp}
-import java.util.concurrent.Executors
 
 object MonixAutoAckConsumer extends TaskApp {
 
@@ -46,18 +45,11 @@ object MonixAutoAckConsumer extends TaskApp {
     automaticRecovery = true
   )
 
-  val blockerResource =
-    Resource
-      .make(Task(Executors.newCachedThreadPool()))(es => Task(es.shutdown()))
-      .map(Blocker.liftExecutorService)
-
   override def run(args: List[String]): Task[ExitCode] =
-    blockerResource.use { blocker =>
-      RabbitClient[Task](config, blocker).flatMap { client =>
-        ResilientStream
-          .runF(new AutoAckConsumerDemo[Task](client).program)
-          .as(ExitCode.Success)
-      }
+    RabbitClient[Task](config).flatMap { client =>
+      ResilientStream
+        .runF(new AutoAckConsumerDemo[Task](client).program)
+        .as(ExitCode.Success)
     }
 
 }

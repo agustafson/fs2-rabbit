@@ -20,14 +20,16 @@ import java.nio.charset.StandardCharsets
 
 import cats.data.EitherT
 import cats.effect.{IO, SyncIO}
+import cats.effect.unsafe.IORuntime
 import cats.instances.either._
 import cats.instances.try_._
-import dev.profunktor.fs2rabbit.model.{AmqpEnvelope, AmqpProperties, DeliveryTag, ExchangeName, RoutingKey}
+import dev.profunktor.fs2rabbit.model._
 import org.scalatest.funsuite.AsyncFunSuite
 
 import scala.util.Try
 
 class EnvelopeDecoderSpec extends AsyncFunSuite {
+  implicit val runtime: IORuntime = IORuntime.global
 
   // Available instances of EnvelopeDecoder for any ApplicativeError[F, Throwable]
   EnvelopeDecoder[Either[Throwable, *], String]

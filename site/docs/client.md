@@ -18,7 +18,6 @@ import javax.net.ssl.SSLContext
 object RabbitClient {
   def apply[F[_]: ConcurrentEffect](
     config: Fs2RabbitConfig,
-    blocker: Blocker,
     sslContext: Option[SSLContext] = None,
     saslConfig: SaslConfig = DefaultSaslConfig.PLAIN
   ): F[RabbitClient[F]] = ???
@@ -52,16 +51,9 @@ class Demo extends IOApp {
     internalQueueSize = Some(500)
   )
 
-  val blockerResource =
-    Resource
-      .make(IO(Executors.newCachedThreadPool()))(es => IO(es.shutdown()))
-      .map(Blocker.liftExecutorService)
-
   override def run(args: List[String]): IO[ExitCode] =
-    blockerResource.use { blocker =>
-      RabbitClient[IO](config, blocker).flatMap { client =>
-        Program.foo[IO](client).as(ExitCode.Success)
-      }
+    RabbitClient[IO](config, blocker).flatMap { client =>
+      Program.foo[IO](client).as(ExitCode.Success)
     }
 
 }

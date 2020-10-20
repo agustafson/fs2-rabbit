@@ -17,6 +17,7 @@
 package dev.profunktor.fs2rabbit.program
 
 import cats.effect._
+import cats.effect.unsafe.UnsafeRun
 import cats.implicits._
 import dev.profunktor.fs2rabbit.algebra.ConsumingStream.ConsumingStream
 import dev.profunktor.fs2rabbit.algebra.{AckConsuming, Acking, InternalQueue}
@@ -27,10 +28,11 @@ import dev.profunktor.fs2rabbit.model._
 import fs2.Stream
 
 object AckConsumingProgram {
-  def make[F[_]: Effect](configuration: Fs2RabbitConfig,
-                         internalQueue: InternalQueue[F],
-                         blocker: Blocker): F[AckConsumingProgram[F]] =
-    (AckingProgram.make(configuration, blocker), ConsumingProgram.make(internalQueue, blocker)).mapN {
+  def make[F[_]: Sync: UnsafeRun](
+      configuration: Fs2RabbitConfig,
+      internalQueue: InternalQueue[F]
+  ): F[AckConsumingProgram[F]] =
+    (AckingProgram.make(configuration), ConsumingProgram.make(internalQueue)).mapN {
       case (ap, cp) =>
         WrapperAckConsumingProgram(ap, cp)
     }
@@ -38,7 +40,7 @@ object AckConsumingProgram {
 
 trait AckConsumingProgram[F[_]] extends AckConsuming[F, Stream[F, *]] with Acking[F] with ConsumingStream[F]
 
-case class WrapperAckConsumingProgram[F[_]: Effect] private (
+case class WrapperAckConsumingProgram[F[_]: Sync: UnsafeRun] private (
     ackingProgram: AckingProgram[F],
     consumingProgram: ConsumingProgram[F]
 ) extends AckConsumingProgram[F] {
@@ -91,7 +93,8 @@ case class WrapperAckConsumingProgram[F[_]: Effect] private (
       noLocal: Boolean,
       exclusive: Boolean,
       consumerTag: ConsumerTag,
-      args: Arguments)(implicit decoder: EnvelopeDecoder[F, A]): F[Stream[F, AmqpEnvelope[A]]] =
+      args: Arguments
+  )(implicit decoder: EnvelopeDecoder[F, A]): F[Stream[F, AmqpEnvelope[A]]] =
     consumingProgram.createConsumer(queueName, channel, basicQos, autoAck, noLocal, exclusive, consumerTag, args)
 
   override def createAcker(channel: AMQPChannel): F[AckResult => F[Unit]] =

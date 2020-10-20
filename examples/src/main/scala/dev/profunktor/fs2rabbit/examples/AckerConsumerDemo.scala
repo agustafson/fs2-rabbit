@@ -30,7 +30,7 @@ import dev.profunktor.fs2rabbit.model.ExchangeType.Topic
 import dev.profunktor.fs2rabbit.model._
 import fs2._
 
-class AckerConsumerDemo[F[_]: Concurrent: Timer](fs2Rabbit: RabbitClient[F]) {
+class AckerConsumerDemo[F[_]: Async](fs2Rabbit: RabbitClient[F]) {
   private val queueName    = QueueName("testQ")
   private val exchangeName = ExchangeName("testEX")
   private val routingKey   = RoutingKey("testRK")
@@ -68,7 +68,7 @@ class AckerConsumerDemo[F[_]: Concurrent: Timer](fs2Rabbit: RabbitClient[F]) {
 
 }
 
-class Flow[F[_]: Concurrent, A](
+class Flow[F[_]: Async, A](
     consumer: Stream[F, AmqpEnvelope[A]],
     acker: AckResult => F[Unit],
     logger: Pipe[F, AmqpEnvelope[A], AckResult],
