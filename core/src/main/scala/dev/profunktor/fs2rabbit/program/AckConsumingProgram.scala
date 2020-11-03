@@ -17,7 +17,7 @@
 package dev.profunktor.fs2rabbit.program
 
 import cats.effect._
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.std.Dispatcher
 import cats.implicits._
 import dev.profunktor.fs2rabbit.algebra.ConsumingStream.ConsumingStream
 import dev.profunktor.fs2rabbit.algebra.{AckConsuming, Acking, InternalQueue}
@@ -28,19 +28,19 @@ import dev.profunktor.fs2rabbit.model._
 import fs2.Stream
 
 object AckConsumingProgram {
-  def make[F[_]: Sync: UnsafeRun](
+  def make[F[_]: Sync](
+      dispatcher: Dispatcher[F],
       configuration: Fs2RabbitConfig,
       internalQueue: InternalQueue[F]
   ): F[AckConsumingProgram[F]] =
-    (AckingProgram.make(configuration), ConsumingProgram.make(internalQueue)).mapN {
-      case (ap, cp) =>
-        WrapperAckConsumingProgram(ap, cp)
+    (AckingProgram.make(dispatcher, configuration), ConsumingProgram.make(dispatcher, internalQueue)).mapN {
+      case (ap, cp) => WrapperAckConsumingProgram(ap, cp)
     }
 }
 
 trait AckConsumingProgram[F[_]] extends AckConsuming[F, Stream[F, *]] with Acking[F] with ConsumingStream[F]
 
-case class WrapperAckConsumingProgram[F[_]: Sync: UnsafeRun] private (
+case class WrapperAckConsumingProgram[F[_]: Sync] private (
     ackingProgram: AckingProgram[F],
     consumingProgram: ConsumingProgram[F]
 ) extends AckConsumingProgram[F] {

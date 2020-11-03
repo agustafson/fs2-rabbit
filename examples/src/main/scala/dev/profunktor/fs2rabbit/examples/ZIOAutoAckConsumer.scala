@@ -18,8 +18,7 @@ package dev.profunktor.fs2rabbit.examples
 
 import dev.profunktor.fs2rabbit.config.Fs2RabbitConfig
 import dev.profunktor.fs2rabbit.interpreter.RabbitClient
-
-import cats.effect.{Resource}
+import cats.effect.std.Dispatcher
 import zio._
 import zio.interop.catz._
 import zio.interop.catz.implicits._
@@ -41,8 +40,9 @@ object ZIOAutoAckConsumer extends CatsApp {
   )
 
   override def run(args: List[String]): URIO[ZEnv, ExitCode] =
-    RabbitClient[Task](config)
-      .flatMap { client =>
+    Dispatcher[Task]
+      .evalMap(dispatcher => RabbitClient[Task](dispatcher, config))
+      .use { client =>
         ResilientStream
           .runF(new AutoAckConsumerDemo[Task](client).program)
       }

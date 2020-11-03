@@ -18,6 +18,7 @@ package dev.profunktor.fs2rabbit.examples
 
 import cats.data.NonEmptyList
 import cats.effect._
+import cats.effect.std.Dispatcher
 import cats.syntax.functor._
 import dev.profunktor.fs2rabbit.config.{Fs2RabbitConfig, Fs2RabbitNodeConfig}
 import dev.profunktor.fs2rabbit.interpreter.RabbitClient
@@ -46,7 +47,7 @@ object MonixAutoAckConsumer extends TaskApp {
   )
 
   override def run(args: List[String]): Task[ExitCode] =
-    RabbitClient[Task](config).flatMap { client =>
+    Dispatcher[Task].evalMap(dispatcher => RabbitClient[Task](dispatcher, config)).use { client =>
       ResilientStream
         .runF(new AutoAckConsumerDemo[Task](client).program)
         .as(ExitCode.Success)

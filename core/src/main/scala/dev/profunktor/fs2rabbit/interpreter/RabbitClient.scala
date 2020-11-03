@@ -17,7 +17,7 @@
 package dev.profunktor.fs2rabbit.interpreter
 
 import cats.effect._
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.std.Dispatcher
 import cats.implicits._
 import com.rabbitmq.client.{DefaultSaslConfig, MetricsCollector, SaslConfig}
 import dev.profunktor.fs2rabbit.algebra._
@@ -33,8 +33,8 @@ import fs2.Stream
 import javax.net.ssl.SSLContext
 
 object RabbitClient {
-
-  def apply[F[_]: Async: UnsafeRun](
+  def apply[F[_]: Async](
+      dispatcher: Dispatcher[F],
       config: Fs2RabbitConfig,
       sslContext: Option[SSLContext] = None,
       // Unlike SSLContext, SaslConfig is not optional because it is always set
@@ -45,13 +45,13 @@ object RabbitClient {
 
     val internalQ         = new LiveInternalQueue[F](config.internalQueueSize.getOrElse(500))
     val connection        = ConnectionResource.make(config, sslContext, saslConfig, metricsCollector)
-    val consumingProgram  = AckConsumingProgram.make[F](config, internalQ)
-    val publishingProgram = PublishingProgram.make[F]
+    val consumingProgram  = AckConsumingProgram.make[F](dispatcher, config, internalQ)
+    val publishingProgram = PublishingProgram.make[F](dispatcher)
 
     (connection, consumingProgram, publishingProgram).mapN {
       case (conn, consuming, publish) =>
-        val consumeClient     = Consume.make[F]
-        val publishClient     = Publish.make[F]
+        val consumeClient     = Consume.make[F](dispatcher)
+        val publishClient     = Publish.make[F](dispatcher)
         val bindingClient     = Binding.make[F]
         val declarationClient = Declaration.make[F]
         val deletionClient    = Deletion.make[F]

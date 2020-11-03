@@ -18,6 +18,7 @@ package dev.profunktor.fs2rabbit.examples
 
 import cats.data.NonEmptyList
 import cats.effect._
+import cats.effect.std.Dispatcher
 import dev.profunktor.fs2rabbit.config.{Fs2RabbitConfig, Fs2RabbitNodeConfig}
 import dev.profunktor.fs2rabbit.interpreter.RabbitClient
 import dev.profunktor.fs2rabbit.resiliency.ResilientStream
@@ -39,7 +40,7 @@ object IOAckerConsumer extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] =
-    RabbitClient[IO](config).flatMap { client =>
+    Dispatcher[IO].evalMap(dispatcher => RabbitClient[IO](dispatcher, config)).use { client =>
       ResilientStream
         .runF(new AckerConsumerDemo[IO](client).program)
         .as(ExitCode.Success)

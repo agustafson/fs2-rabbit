@@ -18,7 +18,7 @@ package dev.profunktor.fs2rabbit.program
 
 import cats.Applicative
 import cats.effect.Sync
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.std.Dispatcher
 import dev.profunktor.fs2rabbit.algebra.{AMQPInternals, Acking, Consume}
 import dev.profunktor.fs2rabbit.arguments.Arguments
 import dev.profunktor.fs2rabbit.config.Fs2RabbitConfig
@@ -26,14 +26,14 @@ import dev.profunktor.fs2rabbit.model.AckResult.{Ack, NAck, Reject}
 import dev.profunktor.fs2rabbit.model._
 
 object AckingProgram {
-  def make[F[_]: Sync: UnsafeRun](config: Fs2RabbitConfig): F[AckingProgram[F]] = Sync[F].delay {
-    WrapperAckingProgram(config, Consume.make[F])
+  def make[F[_]: Sync](dispatcher: Dispatcher[F], config: Fs2RabbitConfig): F[AckingProgram[F]] = Sync[F].delay {
+    WrapperAckingProgram(config, Consume.make[F](dispatcher))
   }
 }
 
 trait AckingProgram[F[_]] extends Acking[F] with Consume[F]
 
-case class WrapperAckingProgram[F[_]: Sync: UnsafeRun] private (
+case class WrapperAckingProgram[F[_]: Sync] private (
     config: Fs2RabbitConfig,
     consume: Consume[F]
 ) extends AckingProgram[F] {
@@ -57,13 +57,15 @@ case class WrapperAckingProgram[F[_]: Sync: UnsafeRun] private (
   override def basicQos(channel: AMQPChannel, basicQos: BasicQos): F[Unit] =
     consume.basicQos(channel, basicQos)
 
-  override def basicConsume[A](channel: AMQPChannel,
-                               queueName: QueueName,
-                               autoAck: Boolean,
-                               consumerTag: ConsumerTag,
-                               noLocal: Boolean,
-                               exclusive: Boolean,
-                               args: Arguments)(internals: AMQPInternals[F]): F[ConsumerTag] =
+  override def basicConsume[A](
+      channel: AMQPChannel,
+      queueName: QueueName,
+      autoAck: Boolean,
+      consumerTag: ConsumerTag,
+      noLocal: Boolean,
+      exclusive: Boolean,
+      args: Arguments
+  )(internals: AMQPInternals[F]): F[ConsumerTag] =
     consume.basicConsume(channel, queueName, autoAck, consumerTag, noLocal, exclusive, args)(internals)
 
   override def basicCancel(channel: AMQPChannel, consumerTag: ConsumerTag): F[Unit] =

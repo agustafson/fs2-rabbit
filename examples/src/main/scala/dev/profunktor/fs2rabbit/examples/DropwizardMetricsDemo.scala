@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.data.{Kleisli, NonEmptyList}
 import cats.effect.{ExitCode, IO, IOApp, Resource, Sync}
+import cats.effect.std.Dispatcher
 import cats.implicits._
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.jmx.JmxReporter
@@ -66,9 +67,10 @@ object DropwizardMetricsDemo extends IOApp {
     val dropwizardCollector = new StandardMetricsCollector(registry)
 
     val resources = for {
-      _       <- JmxReporterResource.make[IO](registry)
-      client  <- Resource.liftF(RabbitClient[IO](config, metricsCollector = Some(dropwizardCollector)))
-      channel <- client.createConnection.flatMap(client.createChannel)
+      _          <- JmxReporterResource.make[IO](registry)
+      dispatcher <- Dispatcher[IO]
+      client     <- Resource.liftF(RabbitClient[IO](dispatcher, config, metricsCollector = Some(dropwizardCollector)))
+      channel    <- client.createConnection.flatMap(client.createChannel)
     } yield (channel, client)
 
     val program = resources.use {

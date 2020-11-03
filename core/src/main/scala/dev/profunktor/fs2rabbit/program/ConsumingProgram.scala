@@ -17,7 +17,7 @@
 package dev.profunktor.fs2rabbit.program
 
 import cats.effect.Sync
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.std.Dispatcher
 import cats.implicits._
 import dev.profunktor.fs2rabbit.algebra.ConsumingStream._
 import dev.profunktor.fs2rabbit.algebra.{AMQPInternals, Consume, InternalQueue}
@@ -27,9 +27,9 @@ import dev.profunktor.fs2rabbit.model._
 import fs2.Stream
 
 object ConsumingProgram {
-  def make[F[_]: Sync: UnsafeRun](internalQueue: InternalQueue[F]): F[ConsumingProgram[F]] =
+  def make[F[_]: Sync](dispatcher: Dispatcher[F], internalQueue: InternalQueue[F]): F[ConsumingProgram[F]] =
     Sync[F].delay {
-      WrapperConsumingProgram(internalQueue, Consume.make[F])
+      WrapperConsumingProgram(internalQueue, Consume.make[F](dispatcher))
     }
 }
 

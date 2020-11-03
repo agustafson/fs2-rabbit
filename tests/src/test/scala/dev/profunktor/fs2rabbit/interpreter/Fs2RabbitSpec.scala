@@ -18,6 +18,7 @@ package dev.profunktor.fs2rabbit.interpreter
 
 import cats.effect._
 import cats.effect.kernel.Deferred
+import cats.effect.std.Dispatcher
 import cats.implicits._
 import dev.profunktor.fs2rabbit.config.Fs2RabbitConfig
 import dev.profunktor.fs2rabbit.config.declaration._
@@ -668,27 +669,32 @@ trait Fs2RabbitSpec { self: BaseSpec =>
       }
   }
 
-  private def withStreamRabbit[A](fa: RabbitClient[IO] => Stream[IO, A]): Future[Assertion] =
-    RabbitClient[IO](config)
-      .flatMap(r => fa(r).compile.drain)
+  private def createStreamingRabbitClient[A](
+      rabbitConfig: Fs2RabbitConfig,
+      fa: RabbitClient[IO] => Stream[IO, A]
+  ): Future[Assertion] =
+    Stream
+      .resource(Dispatcher[IO])
+      .evalMap(RabbitClient[IO](_, rabbitConfig))
+      .flatMap(fa)
+      .compile
+      .drain
       .as(emptyAssertion)
       .unsafeToFuture()
+
+  private def withStreamRabbit[A](fa: RabbitClient[IO] => Stream[IO, A]): Future[Assertion] =
+    createStreamingRabbitClient(config, fa)
 
   private def withStreamNackRabbit[A](fa: RabbitClient[IO] => Stream[IO, A]): Future[Assertion] =
-    RabbitClient[IO](config.copy(requeueOnNack = true))
-      .flatMap(r => fa(r).compile.drain)
-      .as(emptyAssertion)
-      .unsafeToFuture()
+    createStreamingRabbitClient(config.copy(requeueOnNack = true), fa)
 
   private def withStreamRejectRabbit[A](fa: RabbitClient[IO] => Stream[IO, A]): Future[Assertion] =
-    RabbitClient[IO](config.copy(requeueOnReject = true))
-      .flatMap(r => fa(r).compile.drain)
-      .as(emptyAssertion)
-      .unsafeToFuture()
+    createStreamingRabbitClient(config.copy(requeueOnReject = true), fa)
 
   private def withRabbit[A](fa: RabbitClient[IO] => IO[A]): Future[A] =
-    RabbitClient[IO](config)
-      .flatMap(r => fa(r))
+    Dispatcher[IO]
+      .evalMap(dispatcher => RabbitClient[IO](dispatcher, config))
+      .use(r => fa(r))
       .unsafeToFuture()
 
   private def randomQueueData: IO[(QueueName, ExchangeName, RoutingKey)] =

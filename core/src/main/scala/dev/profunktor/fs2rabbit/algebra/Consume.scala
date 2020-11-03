@@ -20,7 +20,7 @@ import cats.effect.Sync
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.Functor
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.std.Dispatcher
 import com.rabbitmq.client.{AMQP, Consumer, DefaultConsumer, Envelope}
 import dev.profunktor.fs2rabbit.arguments.{Arguments, _}
 import dev.profunktor.fs2rabbit.model._
@@ -28,7 +28,7 @@ import dev.profunktor.fs2rabbit.model._
 import scala.util.{Failure, Success, Try}
 
 object Consume {
-  def make[F[_]: Sync: UnsafeRun]: Consume[F] =
+  def make[F[_]: Sync](dispatcher: Dispatcher[F]): Consume[F] =
     new Consume[F] {
       private[fs2rabbit] def defaultConsumer[A](
           channel: AMQPChannel,
@@ -92,7 +92,7 @@ object Consume {
 
           private def unsafeAddToQueue(item: Either[Throwable, AmqpEnvelope[Array[Byte]]]): Unit =
             internals.queue.fold(()) { internalQ =>
-              UnsafeRun[F].unsafeRunAndForget(internalQ.enqueue1(item))
+              dispatcher.unsafeRunAndForget(internalQ.enqueue1(item))
             }
         }
       }
