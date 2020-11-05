@@ -26,10 +26,8 @@ import dev.profunktor.fs2rabbit.model._
 import fs2.Stream
 
 object ConsumingProgram {
-  def make[F[_]: Effect: ContextShift](internalQueue: InternalQueue[F], blocker: Blocker): F[ConsumingProgram[F]] =
-    Sync[F].delay {
-      WrapperConsumingProgram(internalQueue, Consume.make(blocker))
-    }
+  def make[F[_]: Effect: ContextShift](internalQueue: InternalQueue[F], blocker: Blocker): ConsumingProgram[F] =
+    WrapperConsumingProgram(internalQueue, Consume.make(blocker))
 }
 
 trait ConsumingProgram[F[_]] extends ConsumingStream[F] with Consume[F]

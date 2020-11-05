@@ -48,8 +48,8 @@ object RabbitClient {
     val consumingProgram  = AckConsumingProgram.make[F](config, internalQ, blocker)
     val publishingProgram = PublishingProgram.make[F](blocker)
 
-    (connection, consumingProgram, publishingProgram).mapN {
-      case (conn, consuming, publish) =>
+    (connection, consumingProgram).mapN {
+      case (conn, consuming) =>
         val consumeClient     = Consume.make[F](blocker)
         val publishClient     = Publish.make[F](blocker)
         val bindingClient     = Binding.make[F](blocker)
@@ -64,7 +64,7 @@ object RabbitClient {
           declarationClient,
           deletionClient,
           consuming,
-          publish
+          publishingProgram
         )
     }
   }

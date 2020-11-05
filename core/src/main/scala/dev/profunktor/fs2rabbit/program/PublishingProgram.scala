@@ -24,9 +24,8 @@ import dev.profunktor.fs2rabbit.effects.MessageEncoder
 import dev.profunktor.fs2rabbit.model._
 
 object PublishingProgram {
-  def make[F[_]: Effect: ContextShift](blocker: Blocker): F[PublishingProgram[F]] = Sync[F].delay {
+  def make[F[_]: Effect: ContextShift](blocker: Blocker): PublishingProgram[F] =
     WrapperPublishingProgram(Publish.make(blocker))
-  }
 }
 
 trait PublishingProgram[F[_]] extends Publishing[F] with Publish[F]

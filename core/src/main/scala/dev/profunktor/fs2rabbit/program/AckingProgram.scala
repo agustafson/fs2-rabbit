@@ -25,9 +25,8 @@ import dev.profunktor.fs2rabbit.model.AckResult.{Ack, NAck, Reject}
 import dev.profunktor.fs2rabbit.model._
 
 object AckingProgram {
-  def make[F[_]: Effect: ContextShift](config: Fs2RabbitConfig, blocker: Blocker): F[AckingProgram[F]] = Sync[F].delay {
+  def make[F[_]: Effect: ContextShift](config: Fs2RabbitConfig, blocker: Blocker): AckingProgram[F] =
     WrapperAckingProgram(config, Consume.make(blocker))
-  }
 }
 
 trait AckingProgram[F[_]] extends Acking[F] with Consume[F]
