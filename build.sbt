@@ -4,7 +4,7 @@ import Dependencies._
 import microsites.ExtraMdFileConfig
 
 ThisBuild / name := """fs2-rabbit"""
-ThisBuild / crossScalaVersions := List("2.12.12", "2.13.3")
+ThisBuild / crossScalaVersions := List("2.12.12", "2.13.3", "3.0.0-M1")
 ThisBuild / organization := "dev.profunktor"
 ThisBuild / homepage := Some(url("https://fs2-rabbit.profunktor.dev/"))
 ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
@@ -48,7 +48,7 @@ val commonSettings = List(
       Libraries.scalaTest               % Test,
       Libraries.scalaCheck              % Test,
       Libraries.scalaTestPlusScalaCheck % Test
-    )
+    ).map(_.withDottyCompat(scalaVersion.value))
   },
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
   scalafmtOnCompile := true
