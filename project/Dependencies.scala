@@ -12,7 +12,6 @@ object Dependencies {
     val monix      = "3.2.2"
     val zio        = "1.0.3"
     val zioCats    = "2.2.0.1"
-    val scodec     = "1.0.0"
     val dropwizard = "4.1.14"
 
     val kindProjector    = "0.11.0"
@@ -30,7 +29,6 @@ object Dependencies {
     lazy val amqpClient = "com.rabbitmq"   % "amqp-client" % Version.amqpClient
     lazy val catsEffect = "org.typelevel" %% "cats-effect" % Version.catsEffect
     lazy val fs2Core    = "co.fs2"        %% "fs2-core"    % Version.fs2
-    lazy val scodecCats = "org.scodec"    %% "scodec-cats" % Version.scodec
 
     // Compiler
     lazy val kindProjector    = "org.typelevel" % "kind-projector"     % Version.kindProjector cross CrossVersion.full

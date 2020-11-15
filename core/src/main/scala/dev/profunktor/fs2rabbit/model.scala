@@ -24,7 +24,7 @@ import java.util.Date
 
 import cats.data._
 import cats.implicits._
-import cats.kernel.CommutativeSemigroup
+import cats.kernel.{CommutativeSemigroup, Eq}
 import cats._
 import com.rabbitmq.client.{AMQP, Channel, Connection, LongString}
 import dev.profunktor.fs2rabbit.arguments.Arguments
@@ -32,7 +32,6 @@ import dev.profunktor.fs2rabbit.effects.{EnvelopeDecoder, MessageEncoder}
 import dev.profunktor.fs2rabbit.javaConversion._
 import fs2.Stream
 import scodec.bits.ByteVector
-import scodec.interop.cats._
 
 object model {
 
@@ -266,7 +265,8 @@ object model {
       override def toValueWriterCompatibleJava: Array[Byte] = value.toArray
     }
     object ByteArrayVal extends (ByteVector => ByteArrayVal) {
-      implicit val byteArrayValEq: Eq[ByteArrayVal] = Eq.by(_.value)
+      implicit val byteVectorEqInstance: Eq[ByteVector] = Eq.fromUniversalEquals
+      implicit val byteArrayValEq: Eq[ByteArrayVal]     = Eq.by(_.value)
     }
     final case class BooleanVal(value: Boolean) extends AmqpFieldValue {
       override def toValueWriterCompatibleJava: java.lang.Boolean = Boolean.box(value)
