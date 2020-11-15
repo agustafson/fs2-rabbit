@@ -4,7 +4,7 @@ import Dependencies._
 import microsites.ExtraMdFileConfig
 
 ThisBuild / name := """fs2-rabbit"""
-ThisBuild / crossScalaVersions := List("2.12.12", "2.13.3", "3.0.0-M1")
+ThisBuild / crossScalaVersions := List("0.27.0-RC1"/*"3.0.0-M1", "2.12.12", "2.13.3"*/)
 ThisBuild / organization := "dev.profunktor"
 ThisBuild / homepage := Some(url("https://fs2-rabbit.profunktor.dev/"))
 ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
@@ -30,6 +30,13 @@ def maxClassFileName(v: String) =
     case _             => List("-Xmax-classfile-name", "100")
   }
 
+def dependenciesForScalaVersion(v: String): List[ModuleID] = {
+  CrossVersion.partialVersion(v) match {
+    case Some((2, _)) => List(compilerPlugin(Libraries.kindProjector))
+    case _            => List.empty
+  }
+}
+
 val commonSettings = List(
   organizationName := "ProfunKtor",
   startYear := Some(2017),
@@ -38,9 +45,9 @@ val commonSettings = List(
   headerLicense := Some(HeaderLicense.ALv2("2017-2020", "ProfunKtor")),
   scalacOptions in (Compile, doc) ++= List("-no-link-warnings"),
   scalacOptions ++= maxClassFileName(scalaVersion.value),
+  scalacOptions ++= { if (isDotty.value) Seq("-source:3.0-migration") else Nil },
   libraryDependencies ++= {
-    List(
-      compilerPlugin(Libraries.kindProjector),
+    val deps = List(
       compilerPlugin(Libraries.betterMonadicFor),
       Libraries.amqpClient,
       Libraries.catsEffect,
@@ -48,7 +55,8 @@ val commonSettings = List(
       Libraries.scalaTest               % Test,
       Libraries.scalaCheck              % Test,
       Libraries.scalaTestPlusScalaCheck % Test
-    ).map(_.withDottyCompat(scalaVersion.value))
+    )
+    (dependenciesForScalaVersion(scalaVersion.value) ++ deps).map(_.withDottyCompat(scalaVersion.value))
   },
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
   scalafmtOnCompile := true
